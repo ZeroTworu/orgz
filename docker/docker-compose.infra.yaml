@@ -1,0 +1,16 @@
+version: "3"
+services:
+  postgres:
+    image: "postgis/postgis:17-3.5"
+    environment:
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "password"
+      POSTGRES_DB: "db"
+    volumes:
+      - "orgz:/data/postgres:/var/lib/postgresql/data"
+    ports:
+      - "5557:5432"
+volumes:
+  orgz:
+networks:
+  orgz:

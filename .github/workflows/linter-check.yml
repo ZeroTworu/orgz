@@ -1,0 +1,27 @@
+name: "Liter Check"
+
+on:
+  push:
+    branches:
+      - "*"
+  pull_request:
+    branches:
+      - "master"
+
+jobs:
+  license-check:
+    name: "Python linter"
+    runs-on: "ubuntu-latest"
+
+    container:
+      image: "hanyuu/python:wps-slim"
+
+    steps:
+      - name: "Checkout code"
+
+      - name: "Run linter"
+        run: "flake8 app/"
+
+      - name: "Handle failure (optional)"
+        if: failure()
+        run: "echo \"Linter check failed! Please review errors\""
