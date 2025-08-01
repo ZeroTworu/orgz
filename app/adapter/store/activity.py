@@ -10,12 +10,12 @@ if TYPE_CHECKING:
     from app.adapter.store.sql_adapter import DataBaseAdapter
     from sqlalchemy import Result, Sequence
 
-from app.adapter.dto.organizations import ActivityTreeDto
+from app.adapter.dto.organizations import ActivityDto, ActivityTreeDto
 
 
 class ActivityAdapter:
 
-    async def add_activity(self: 'DataBaseAdapter', name: 'str', parent_id: 'uuid.UUID | None' = None) -> 'Activity':
+    async def add_activity(self: 'DataBaseAdapter', name: 'str', parent_id: 'uuid.UUID | None' = None) -> 'ActivityDto':
         if parent_id is None:
             return await self._add_as_root(name)
         else:
@@ -74,7 +74,7 @@ class ActivityAdapter:
                 parent.children.append(dto)
         return root_node
 
-    async def _add_as_root(self: 'DataBaseAdapter', name: 'str') -> 'Activity':
+    async def _add_as_root(self: 'DataBaseAdapter', name: 'str') -> 'ActivityDto':
         async with self._sc() as session:
             max_rgt = (
                 await session.execute(
@@ -92,9 +92,9 @@ class ActivityAdapter:
             session.add(new_node)
             await session.commit()
             await session.flush()
-            return new_node
+            return ActivityDto.model_validate(new_node)
 
-    async def _add_under_parent(self: 'DataBaseAdapter', name: str, parent_id: uuid.UUID | None = None):
+    async def _add_under_parent(self: 'DataBaseAdapter', name: 'str', parent_id: 'uuid.UUID') -> 'ActivityDto':
         async with self._sc() as session:
             parent: Activity = (
                 await session.execute(select(Activity).where(Activity.id == parent_id))
@@ -127,4 +127,4 @@ class ActivityAdapter:
             session.add(new_node)
             await session.commit()
             await session.flush()
-            return new_node
+            return ActivityDto.model_validate(new_node)
