@@ -17,6 +17,9 @@ jobs:
       image: "hanyuu/python:wps-slim"
 
     steps:
+      - name: "Checkout repository"
+      - uses: "actions/checkout@v4"
+
       - name: "Run linter"
         run: "flake8 app/"
 
