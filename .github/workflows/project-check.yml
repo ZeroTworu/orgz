@@ -1,0 +1,58 @@
+name: "Liter Check"
+
+on:
+  push:
+    branches:
+      - "*"
+  pull_request:
+    branches:
+      - "master"
+jobs:
+  linter:
+    name: "Python linter"
+    runs-on: "ubuntu-latest"
+
+    container:
+      image: "hanyuu/python:wps-slim"
+
+    steps:
+      - name: "Checkout repository"
+        uses: "actions/checkout@v4"
+
+      - name: "Run linter"
+        run: "flake8 app/"
+
+  tests:
+    name: "Pytest"
+    needs: [ "linter" ]
+    runs-on: "ubuntu-latest"
+
+    services:
+      postgres:
+        image: "postgis/postgis:17-3.5"
+        ports:
+          - "5432:5432"
+        env:
+          POSTGRES_DB: "orgz"
+          POSTGRES_USER: "postgres"
+          POSTGRES_PASSWORD: "postgres"
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      ORGZ_DATA_BASE_DSN: "postgresql+asyncpg://postgres:postgres@postgres:5432/orgz"
+
+    container:
+      image: "hanyuu/python:pytest-slim"
+
+    steps:
+      - uses: "actions/checkout@v4"
+
+      - name: "Install dependencies"
+        run: "poetry install --no-root"
+
+      - name: "Run tests"
+        run: "poetry run pytest"

@@ -1,10 +1,13 @@
-.PHONY: lint isort infra app up
+.PHONY: lint isort test infra app up
 
 lint:
 	poetry run flake8 app/
 
 isort:
 	poetry run isort app/ migrations/
+
+test:
+	pytest
 
 infra:
 	docker-compose -f docker/docker-compose.infra.yaml up --remove-orphans
