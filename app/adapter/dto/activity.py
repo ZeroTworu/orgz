@@ -21,5 +21,6 @@ class ActivityTreeDto(ActivityDto):
 class NameQueryDto(BaseModel):
     name: str
 
-def organization_name_query_dto(name: str = Query(...), ) -> NameQueryDto:
+
+def name_query_dto(name: str = Query(...), ) -> NameQueryDto:  # noqa: WPS404
     return NameQueryDto(name=name)

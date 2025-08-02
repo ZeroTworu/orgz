@@ -4,6 +4,7 @@ from fastapi import FastAPI
 
 from app.adapter import get_database_sync_adapter
 from app.adapter.search import get_search_adapter
+from app.http.api.activity import activity_router
 from app.http.api.organization import organizations_router
 from app.settings import ORGZ_FORCE_RECREATE
 
@@ -25,3 +26,5 @@ async def lifespan(_: 'FastAPI'):
 app = FastAPI(title='Organizations Zero Two', lifespan=lifespan)
 
 app.include_router(organizations_router)
+
+app.include_router(activity_router)

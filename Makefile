@@ -16,4 +16,4 @@ app:
 	uvicorn  app.http.app:app --reload
 
 up:
-	docker-compose up --pull always --force-recreate
+	docker-compose -f docker/docker-compose.app.yaml up --pull always --force-recreate

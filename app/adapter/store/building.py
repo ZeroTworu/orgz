@@ -31,4 +31,8 @@ class BuildingAdapter:
 
             await session.commit()
             await session.flush()
-            return BuildingDto.model_validate(building)
+            return BuildingDto(
+                adress=adress,
+                cords=point,
+                id=building.id,
+            )

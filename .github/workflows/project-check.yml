@@ -42,8 +42,23 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+    elasticsearch:
+      image: "elasticsearch:8.11.3"
+      ports:
+        - "9200:9200"
+      env:
+        discovery.type: "single-node"
+        xpack.security.enabled: "false"
+        ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+      options: >-
+        --health-cmd "curl -s http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"'"
+        --health-interval 10s
+        --health-timeout 5s
+        --health-retries 10
+
     env:
       ORGZ_DATA_BASE_DSN: "postgresql+asyncpg://postgres:postgres@postgres:5432/orgz"
+      ORGZ_ELASTIC_HOST: "http://elasticsearch:9200"
 
     container:
       image: "hanyuu/python:pytest-slim"

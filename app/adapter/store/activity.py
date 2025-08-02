@@ -14,10 +14,10 @@ if TYPE_CHECKING:
 from asyncio import gather
 
 from app.adapter.dto import ActivityDto, ActivityTreeDto, ElasticQueryDto
-from app.adapter.search import get_search_adapter
+from app.adapter.search import ElasticSearchAdapter, get_search_adapter
 
 
-class ActivityAdapter:
+class ActivityAdapter:  # noqa: WPS214
 
     async def add_activity(self: 'DataBaseAdapter', name: 'str', parent_id: 'uuid.UUID | None' = None) -> 'ActivityDto':
         es_adapter = get_search_adapter()
@@ -28,7 +28,21 @@ class ActivityAdapter:
         await es_adapter.index_activity(activity)
         return activity
 
-    async def get_activity_tree_by_id(
+    async def get_all_activities_trees(self: 'DataBaseAdapter') -> 'List[ActivityTreeDto]':
+        async with self._sc() as session:
+            roots: 'Sequence[uuid.UUID]' = (await session.execute(
+                select(Activity.id).where(Activity.parent_id.is_(None))
+            )).scalars().all()
+
+            result = await gather(
+                *map(
+                    self.get_activity_tree_by_root_id,
+                    roots,
+                ),
+            )
+            return result
+
+    async def get_activity_tree_by_root_id(
             self: 'DataBaseAdapter',
             activity_id: 'uuid.UUID|str'
     ) -> 'ActivityTreeDto|None':
@@ -58,9 +72,13 @@ class ActivityAdapter:
 
     async def get_simple_activity_tree_by_name(
             self: 'DataBaseAdapter',
-            name: 'str'
+            name: 'str',
+            es_adapter: 'ElasticSearchAdapter' = None
     ) -> 'List[uuid.UUID]':
-        es_adapter = get_search_adapter()
+
+        if es_adapter is None:
+            es_adapter = get_search_adapter()
+
         uids = await es_adapter.search(ElasticQueryDto(name=name))
         if not bool(uids):
             return []
@@ -71,6 +89,26 @@ class ActivityAdapter:
             ),
         )
         return [_uuid for uuids in results for _uuid in uuids]
+
+    async def get_activity_tree_by_name(
+            self: 'DataBaseAdapter',
+            name: 'str',
+            es_adapter: 'ElasticSearchAdapter' = None
+    ) -> 'List[ActivityTreeDto]':
+
+        if es_adapter is None:
+            es_adapter = get_search_adapter()
+
+        uids = await es_adapter.search(ElasticQueryDto(name=name))
+        if not bool(uids):
+            return []
+        results = await gather(
+            *map(
+                self.get_activity_tree_by_root_id,
+                uids,
+            ),
+        )
+        return results
 
     async def get_simple_activity_tree_by_id(
             self: 'DataBaseAdapter',
@@ -101,13 +139,14 @@ class ActivityAdapter:
             return [scalar for scalar in descendants]
 
     def _build_tree(self: 'DataBaseAdapter', root: 'Activity', descendants: 'Sequence[Activity]') -> 'ActivityTreeDto':
-        id_to_node: 'dict[uuid.UUID, ActivityTreeDto]' = {}
+        id_to_node: dict[uuid.UUID, ActivityTreeDto] = {}
 
-        root_node: 'ActivityTreeDto' = ActivityTreeDto(
+        root_node = ActivityTreeDto(
             id=root.id,
             name=root.name,
             children=[]
         )
+        id_to_node[root.id] = root_node
 
         for node in descendants:
             dto = ActivityTreeDto(
@@ -115,14 +154,15 @@ class ActivityAdapter:
                 name=node.name,
                 children=[]
             )
-
             id_to_node[node.id] = dto
 
-            if node.parent_id is None:
-                root_node = dto
-            else:
-                parent = id_to_node.get(node.parent_id)
-                parent.children.append(dto)
+        for node in descendants:
+            parent = id_to_node.get(node.parent_id)
+            if parent:
+                parent.children.append(id_to_node[node.id])
+            if node.parent_id == root.id:
+                root_node.children.append(id_to_node[node.id])
+
         return root_node
 
     async def _add_as_root(self: 'DataBaseAdapter', name: 'str') -> 'ActivityDto':
