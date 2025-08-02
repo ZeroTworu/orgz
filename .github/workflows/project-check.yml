@@ -2,9 +2,11 @@ name: "project-check"
 
 on:
   push:
-    branches: [main]
+    branches:
+      - "*"
   pull_request:
-    branches: [main]
+    branches:
+      - "main"
 jobs:
   linter:
     name: "Python linter"
