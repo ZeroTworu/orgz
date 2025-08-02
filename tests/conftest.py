@@ -8,7 +8,7 @@ from alembic.config import Config
 from app.adapter import DataBaseAdapter
 from app.adapter.search import ElasticSearchAdapter
 from httpx import AsyncClient, ASGITransport
-
+from typing import AsyncGenerator
 
 from app.http.app import app
 
@@ -26,22 +26,20 @@ def migrate_db(alembic_config: 'Config'):
     command.upgrade(alembic_config, 'head')
 
 @pytest.fixture
-async def search_adapter() -> 'ElasticSearchAdapter':
+async def search_adapter() -> 'AsyncGenerator[ElasticSearchAdapter]':
     adapter = ElasticSearchAdapter()
     await adapter.init_index()
-    return adapter
+    yield adapter
 
 @pytest.fixture
-async def db_adapter(migrate_db, search_adapter) -> 'DataBaseAdapter':
+async def db_adapter(migrate_db, search_adapter) -> 'AsyncGenerator[DataBaseAdapter]':
     adapter = DataBaseAdapter()
-    await search_adapter.clear_index()
-    await adapter.clear_data()
     await adapter.init_data()
-    return adapter
+    yield adapter
 
 
 @pytest.fixture
-async def client() -> AsyncClient:
+async def client() -> 'AsyncGenerator[AsyncClient]':
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url='http://test') as client:
-        return client
+        yield client
