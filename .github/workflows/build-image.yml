@@ -1,8 +1,8 @@
-name: "Build and Push Docker Image for Organizations"
+name: "build-image"
 
 on:
   workflow_run:
-    workflows: ["Liter Check"]
+    workflows: ["project-check"]
     types:
       - "completed"
   push:
