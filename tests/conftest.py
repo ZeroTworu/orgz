@@ -26,17 +26,19 @@ def migrate_db(alembic_config: 'Config'):
     command.upgrade(alembic_config, 'head')
 
 @pytest.fixture
-async def db_adapter(migrate_db) -> 'DataBaseAdapter':
-    adapter = DataBaseAdapter()
-    await adapter.init_data()
-    return adapter
-
-
-@pytest.fixture
 async def search_adapter() -> 'ElasticSearchAdapter':
     adapter = ElasticSearchAdapter()
     await adapter.init_index()
     return adapter
+
+@pytest.fixture
+async def db_adapter(migrate_db, search_adapter) -> 'DataBaseAdapter':
+    adapter = DataBaseAdapter()
+    await search_adapter.clear_index()
+    await adapter.clear_data()
+    await adapter.init_data()
+    return adapter
+
 
 @pytest.fixture
 async def client() -> AsyncClient:
