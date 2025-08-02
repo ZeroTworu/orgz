@@ -58,6 +58,7 @@ jobs:
     env:
       ORGZ_DATA_BASE_DSN: "postgresql+asyncpg://postgres:postgres@postgres:5432/orgz"
       ORGZ_ELASTIC_HOST: "http://elasticsearch:9200"
+      ORGZ_PYTEST_ON: "yes"
 
     container:
       image: "hanyuu/python:pytest-slim"

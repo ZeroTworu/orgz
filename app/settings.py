@@ -17,3 +17,5 @@ ORGZ_LOG_LEVEL: 'str' = getenv('ORGZ_LOG_LEVEL', 'INFO')
 ORGZ_ELASTIC_HOST: 'str' = getenv('ORGZ_ELASTIC_HOST', 'http://localhost:9200')
 
 ORGZ_ES_INDEX_NAME: 'str' = getenv('ORGZ_ES_INDEX_NAME', 'orgz-index')
+
+ORGZ_PYTEST_ON: 'bool' = getenv('ORGZ_PYTEST_ON', 'no') == 'yes'

@@ -71,3 +71,6 @@ exclude = [
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+env = [
+  "ORGZ_PYTEST_ON=yes"
+]

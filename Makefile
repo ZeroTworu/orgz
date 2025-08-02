@@ -7,7 +7,7 @@ isort:
 	poetry run isort app/ migrations/
 
 test:
-	pytest
+	ORGZ_PYTEST_ON=yes poetry run pytest
 
 infra:
 	docker-compose -f docker/docker-compose.infra.yaml up --remove-orphans
