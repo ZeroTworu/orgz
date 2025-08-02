@@ -1,16 +1,14 @@
-name: Build and Push Docker Image for Organizations
+name: "Build and Push Docker Image for Organizations"
 
 on:
   workflow_run:
-    workflows: ["project-check"]
+    workflows: ["Liter Check"]
     types:
       - "completed"
   push:
-    branches:
-      - "*"
+    branches: [main]
   pull_request:
-    branches:
-      - "master"
+    branches: [main]
 env:
   REGISTRY: "ghcr.io"
   IMAGE_NAME: ${{ github.repository }}/orgz
