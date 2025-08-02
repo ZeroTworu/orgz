@@ -1,6 +1,7 @@
 import uuid
+from typing import List
 
-from geoalchemy2 import Geometry
+from geoalchemy2 import Geography
 from sqlalchemy import DateTime, ForeignKey, Integer, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import (Mapped, declarative_base, mapped_column,
@@ -54,7 +55,7 @@ class Building(Base, BaseMixin):
 
     adress: Mapped[str] = mapped_column(String, nullable=False)
 
-    cords: Mapped['Geometry'] = mapped_column(Geometry('POINT', spatial_index=False), nullable=False)
+    cords: Mapped['Geography'] = mapped_column(Geography('POINT', srid=4326, spatial_index=False), nullable=False)
 
     organizations: Mapped['Organization'] = relationship(
         back_populates='building', cascade='all'
@@ -62,6 +63,18 @@ class Building(Base, BaseMixin):
 
     def __repr__(self):
         return f'Building(adress{self.adress}, cords={self.cords})'
+
+
+class Phone(Base, BaseMixin):
+    __tablename__ = 'phone'
+
+    phone: Mapped[str] = mapped_column(String, nullable=False)
+
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey('organization.id', ondelete='CASCADE')
+    )
+
+    organization: Mapped['Organization'] = relationship(back_populates='phones')
 
 
 class Organization(Base, BaseMixin):
@@ -82,6 +95,8 @@ class Organization(Base, BaseMixin):
     building: Mapped[Building] = relationship(
         back_populates='organizations', cascade='all'
     )
+
+    phones: Mapped[List['Phone']] = relationship(back_populates='organization')
 
     def __repr__(self) -> 'str':
         return f'<Organization({self.name})>'

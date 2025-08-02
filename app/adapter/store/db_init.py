@@ -1,14 +1,17 @@
 import asyncio
+import random
 from typing import TYPE_CHECKING
 
 from sqlalchemy import delete, select
 
-from app.adapter.store.models import Activity, Building, Organization
+from app.adapter.store.models import Activity, Building, Organization, Phone
 
 if TYPE_CHECKING:
     from app.adapter.store.sql_adapter import DataBaseAdapter
 
 
+#  asyncio.sleep тут нужны, что бы успели обновится данные в индексе Elastic Search
+#  актуально, когда запускаешь pytest
 class InitDataBaseAdapter:
 
     async def init_data(self: 'DataBaseAdapter'):
@@ -18,6 +21,8 @@ class InitDataBaseAdapter:
         await self._init_building()
         # Организации
         await self._init_organization()
+        # Накидаем рандомных телефонов
+        await self._init_phone_number()
 
     async def clear_data(self: 'DataBaseAdapter'):
         async with self._sc() as session:
@@ -96,11 +101,40 @@ class InitDataBaseAdapter:
             if result.scalars().first() is None:
                 self._logger.warning('Init Organization...')
 
-                await self.add_organization('ООО "Рога и Копыта"', self._eat, self._office1)
-                await self.add_organization('ООО "Рогатая Няша"', self._milk, self._office5)
-                await self.add_organization('Games Workshop', self._wh, self._office1)
-                await self.add_organization('Black Library', self._wh, self._office4)
-                await self.add_organization('ИП Рогов Василий', self._passenger_cars, self._office2)
-                await self.add_organization('Studio Deen', self._anime, self._office3)
+                self._org1 = await self.add_organization('ООО "Рога и Копыта"', self._eat, self._office1)
+                self._org2 = await self.add_organization('ООО "Рогатая Няша"', self._milk, self._office5)
+                self._org3 = await self.add_organization('Games Workshop', self._wh, self._office1)
+                self._org4 = await self.add_organization('Black Library', self._wh, self._office4)
+                self._org5 = await self.add_organization('ИП Рогов Василий', self._passenger_cars, self._office2)
+                self._org6 = await self.add_organization('Studio Deen', self._anime, self._office3)
                 await asyncio.sleep(0.5)
                 self._logger.warning('Init Organization done.')
+
+    async def _init_phone_number(self: 'DataBaseAdapter'):
+        async with self._sc() as session:
+            result = await session.execute(select(Phone))
+            if result.scalars().first() is None:
+                orgs = [
+                    self._org1,
+                    self._org2,
+                    self._org3,
+                    self._org4,
+                    self._org5,
+                    self._org6,
+                ]
+                self._logger.warning('Init Phone number...')
+                for delta in range(1, 30):
+                    phone = Phone(
+                        organization_id=random.choice(orgs).organization_id,
+                        phone=f'+7'
+                              f'('f'{random.randint(1, 10)}{random.randint(0, 10)}{random.randint(0, 10)}'f')'
+                              f'-'
+                              f'{random.randint(0, 10)}{random.randint(0, 10)}{random.randint(0, 10)}'
+                              f'{random.randint(0, 10)}{random.randint(0, 10)}'
+                              f'-'
+                              f'{random.randint(0, 10)}{random.randint(0, 10)}',
+                    )
+                    session.add(phone)
+                await session.commit()
+                await session.flush()
+            self._logger.warning('Init Phone number done.')

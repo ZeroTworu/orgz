@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 class EsSearchType(Enum):
     ACTIVITY = 'activity'
+    BUILDING = 'building'
     ORGANIZATION = 'organization'
 
 

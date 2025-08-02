@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 from asyncio import gather
 
 from app.adapter.dto import ActivityDto, ActivityTreeDto, ElasticQueryDto
-from app.adapter.search import ElasticSearchAdapter, get_search_adapter
+from app.adapter.search import get_search_adapter
 
 
 class ActivityAdapter:  # noqa: WPS214
@@ -34,13 +34,18 @@ class ActivityAdapter:  # noqa: WPS214
                 select(Activity.id).where(Activity.parent_id.is_(None))
             )).scalars().all()
 
-            result = await gather(
+            results = await gather(
                 *map(
                     self.get_activity_tree_by_root_id,
                     roots,
                 ),
             )
-            return result
+            return list(
+                filter(
+                    lambda activity: activity is not None,
+                    results,
+                )
+            )
 
     async def get_activity_tree_by_root_id(
             self: 'DataBaseAdapter',
@@ -73,11 +78,9 @@ class ActivityAdapter:  # noqa: WPS214
     async def get_simple_activity_tree_by_name(
             self: 'DataBaseAdapter',
             name: 'str',
-            es_adapter: 'ElasticSearchAdapter' = None
     ) -> 'List[uuid.UUID]':
 
-        if es_adapter is None:
-            es_adapter = get_search_adapter()
+        es_adapter = get_search_adapter()
 
         uids = await es_adapter.search(ElasticQueryDto(name=name))
         if not bool(uids):
@@ -90,7 +93,7 @@ class ActivityAdapter:  # noqa: WPS214
         )
         return [_uuid for uuids in results for _uuid in uuids]
 
-    async def get_activity_tree_by_name(
+    async def find_activity_tree_by_name(
             self: 'DataBaseAdapter',
             name: 'str',
     ) -> 'List[ActivityTreeDto]':
@@ -106,7 +109,12 @@ class ActivityAdapter:  # noqa: WPS214
                 uids,
             ),
         )
-        return results
+        return list(
+            filter(
+                lambda activity: activity is not None,
+                results,
+            )
+        )
 
     async def get_simple_activity_tree_by_id(
             self: 'DataBaseAdapter',

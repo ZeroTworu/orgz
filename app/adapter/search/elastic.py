@@ -10,7 +10,8 @@ from app.settings import ORGZ_ELASTIC_HOST, ORGZ_ES_INDEX_NAME
 if TYPE_CHECKING:
     from typing import List
 
-    from app.adapter.dto import ActivityDto, ElasticQueryDto, OrganizationDto
+    from app.adapter.dto import (ActivityDto, BuildingDto, ElasticQueryDto,
+                                 OrganizationDto)
 
 
 class ElasticSearchAdapter:
@@ -69,6 +70,17 @@ class ElasticSearchAdapter:
                     'type': EsSearchType.ACTIVITY.value,
                     'name': activity.name,
                     'pk': activity.activity_id,
+                }
+            )
+
+    async def index_building(self, building: 'BuildingDto'):
+        async with self._client as client:
+            await client.index(
+                index=ORGZ_ES_INDEX_NAME,
+                document={
+                    'type': EsSearchType.BUILDING.value,
+                    'name': building.adress,
+                    'pk': building.building_id,
                 }
             )
 

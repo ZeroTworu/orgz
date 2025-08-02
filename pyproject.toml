@@ -65,6 +65,7 @@ exclude = [
     "app/adapter/dto/__init__.py",
     "app/http/api/*.py",
     "app/adapter/dto/organization.py",
+    "app/adapter/store/db_init.py",
     "*test_*.py"
 ]
 

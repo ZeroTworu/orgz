@@ -2,16 +2,15 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import select
 from sqlalchemy.exc import NoResultFound
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 
 from app.adapter.dto import (ActivityDto, BuildingDto, ElasticQueryDto,
-                             EsSearchType, OrganizationDto,
-                             OrganizationGeoQueryDto)
+                             EsSearchType, GeoQueryDto, OrganizationDto)
 from app.adapter.search import get_search_adapter
 from app.adapter.store.models import Organization
 
 if TYPE_CHECKING:
-    from typing import List
+    from typing import List, Iterable
     from uuid import UUID
 
     from sqlalchemy import Result
@@ -45,6 +44,7 @@ class OrganizationAdapter:
                 id=record.id,
                 activity=activity,
                 building=building,
+                phones=[],
             )
             await search_adapter.index_organization(dto)
             return dto
@@ -59,6 +59,7 @@ class OrganizationAdapter:
                 .options(
                     joinedload(Organization.building),
                     joinedload(Organization.activity),
+                    selectinload(Organization.phones),
                 )
                 .where(Organization.building_id == building_id)
                 .distinct()
@@ -75,22 +76,25 @@ class OrganizationAdapter:
                 .options(
                     joinedload(Organization.building),
                     joinedload(Organization.activity),
+                    selectinload(Organization.phones),
                 )
                 .where(Organization.activity_id == activity_id)
                 .distinct()
             )
             return [OrganizationDto.model_validate(res) for res in result.scalars().all()]
 
-    async def get_organizations_by_geo_query(
+    async def find_organizations_by_geo_query(
             self: 'DataBaseAdapter',
-            query: 'OrganizationGeoQueryDto'
+            query: 'GeoQueryDto'
     ) -> 'List[OrganizationDto]':
         async with self._sc() as session:
             result = await session.execute(
                 select(Organization)
+                .join(Organization.building)
                 .options(
                     joinedload(Organization.building),
                     joinedload(Organization.activity),
+                    selectinload(Organization.phones),
                 )
                 .where(query.condition)
                 .distinct()
@@ -108,6 +112,7 @@ class OrganizationAdapter:
                 .options(
                     joinedload(Organization.building),
                     joinedload(Organization.activity),
+                    selectinload(Organization.phones),
                 )
                 .where(Organization.id == organization_id)
             )
@@ -116,10 +121,9 @@ class OrganizationAdapter:
                 organization = result.scalars().one()
             except NoResultFound:
                 return None
-
             return OrganizationDto.model_validate(organization)
 
-    async def get_organizations_by_activity_name(
+    async def find_organizations_by_activity_name(
             self: 'DataBaseAdapter',
             activity_name: 'str',
     ) -> 'List[OrganizationDto]':
@@ -145,10 +149,10 @@ class OrganizationAdapter:
 
         return [org for orgs in result for org in orgs]
 
-    async def get_organizations_by_organization_name(
+    async def find_organizations_by_organization_name(
             self: 'DataBaseAdapter',
             organization_name: 'str',
-    ) -> 'List[OrganizationDto]':
+    ) -> 'Iterable[OrganizationDto]':
 
         es = get_search_adapter()
         id_list = await es.search(ElasticQueryDto(
@@ -163,4 +167,9 @@ class OrganizationAdapter:
             ),
         )
 
-        return result
+        return list(
+            filter(
+                lambda org: org is not None,
+                result,
+            )
+        )

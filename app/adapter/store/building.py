@@ -1,25 +1,29 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import func
+from sqlalchemy import func, select
 
-from app.adapter.dto import BuildingDto
+from app.adapter.dto import (BuildingDto, ElasticQueryDto, EsSearchType,
+                             GeoQueryDto)
+from app.adapter.search import get_search_adapter
 from app.adapter.store.models import Building
 
 if TYPE_CHECKING:
+    from typing import List
+
     from app.adapter.store.sql_adapter import DataBaseAdapter
 
 
 class BuildingAdapter:
-
     srid = 4326
 
     async def add_building(
-        self: 'DataBaseAdapter|BuildingAdapter',
-        adress: 'str',
-        longitude: 'float',
-        latitude: 'float',
+            self: 'DataBaseAdapter|BuildingAdapter',
+            adress: 'str',
+            longitude: 'float',
+            latitude: 'float',
     ) -> 'BuildingDto':
         async with self._sc() as session:
+            es = get_search_adapter()
             point = func.ST_SetSRID(func.ST_Point(longitude, latitude), self.srid)
 
             building = Building(
@@ -31,8 +35,44 @@ class BuildingAdapter:
 
             await session.commit()
             await session.flush()
-            return BuildingDto(
+            dto = BuildingDto(
                 adress=adress,
                 cords=point,
                 id=building.id,
             )
+
+            await es.index_building(dto)
+            return dto
+
+    async def find_buildings_by_address(
+            self: 'DataBaseAdapter|BuildingAdapter',
+            address: 'str',
+    ) -> 'List[BuildingDto]':
+        async with self._sc() as session:
+            es_adapter = get_search_adapter()
+            uids = await es_adapter.search(ElasticQueryDto(name=address, type=EsSearchType.BUILDING))
+            async with self._sc() as session:
+                result = await session.execute(
+                    select(Building).where(Building.id.in_(uids))
+                )
+                return [
+                    BuildingDto(id=building.id, cords=building.cords, adress=building.adress)
+                    for building in result.scalars().all()
+                ]
+
+    async def find_buildings_by_geo_query(
+            self: 'DataBaseAdapter',
+            query: 'GeoQueryDto'
+    ) -> 'List[BuildingDto]':
+        async with self._sc() as session:
+            result = await session.execute(
+                select(Building)
+                .where(query.condition)
+                .distinct()
+            )
+
+            return [
+                BuildingDto(id=building.id, cords=building.cords, adress=building.adress)
+                for building in result.scalars().all()
+            ]
+

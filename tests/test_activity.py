@@ -16,7 +16,7 @@ async def test_all_activity_trees(db_adapter: 'DataBaseAdapter'):
     assert len(uids) == 3
 
 @pytest.mark.asyncio
-async def test_all_activity_trees(db_adapter: 'DataBaseAdapter'):
-    uids = await db_adapter.get_activity_tree_by_name('Нас')
+async def test_activity_trees_name_search(db_adapter: 'DataBaseAdapter'):
+    uids = await db_adapter.find_activity_tree_by_name('Нас')
     assert len(uids) == 1
     assert len(uids[0].children) == 1

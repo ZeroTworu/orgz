@@ -47,6 +47,7 @@ services:
         condition: "service_healthy"
     environment:
       ORGZ_DATA_BASE_DSN: "postgresql+asyncpg://postgres:password@postgres:5432/db"
+      ORGZ_API_KEY: "fkg7h"
       ORGZ_DATA_BASE_ECHO: "off" # on
       ORGZ_FORCE_RECREATE: "yes" # no
       ORGZ_LOG_LEVEL: "INFO"
