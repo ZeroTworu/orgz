@@ -5,8 +5,9 @@ from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import joinedload
 
 from app.adapter.dto import (ActivityDto, BuildingDto, ElasticQueryDto,
-                             OrganizationDto, OrganizationGeoQueryDto)
-from app.adapter.search import get_search_adapter
+                             EsSearchType, OrganizationDto,
+                             OrganizationGeoQueryDto)
+from app.adapter.search import ElasticSearchAdapter, get_search_adapter
 from app.adapter.store.models import Organization
 
 if TYPE_CHECKING:
@@ -121,8 +122,10 @@ class OrganizationAdapter:
     async def get_organizations_by_activity_name(
             self: 'DataBaseAdapter',
             activity_name: 'str',
+            es: 'ElasticSearchAdapter' = None,
     ) -> 'List[OrganizationDto]':
-        es = get_search_adapter()
+        if es is None:
+            es = get_search_adapter()
 
         id_list = await es.search(ElasticQueryDto(
             name=activity_name,
@@ -143,3 +146,25 @@ class OrganizationAdapter:
         )
 
         return [org for orgs in result for org in orgs]
+
+    async def get_organizations_by_organization_name(
+            self: 'DataBaseAdapter',
+            organization_name: 'str',
+            es: 'ElasticSearchAdapter' = None,
+    ) -> 'List[OrganizationDto]':
+        if es is None:
+            es = get_search_adapter()
+
+        id_list = await es.search(ElasticQueryDto(
+            name=organization_name,
+            type=EsSearchType.ORGANIZATION,
+        ))
+
+        result = await gather(
+            *map(
+                self.get_organization_by_id,
+                id_list,
+            ),
+        )
+
+        return result

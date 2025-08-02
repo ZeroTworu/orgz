@@ -18,14 +18,14 @@ class ElasticSearchAdapter:
 
     def __init__(self):
         self._logger.info('Initializing ElasticSearchAdapter on host %s', ORGZ_ELASTIC_HOST)
-        self.client = AsyncElasticsearch(hosts=[ORGZ_ELASTIC_HOST])
+        self._client = AsyncElasticsearch(hosts=[ORGZ_ELASTIC_HOST])
 
     async def init_index(self):
-        exists = await self.client.indices.exists(index=ORGZ_ES_INDEX_NAME)
+        exists = await self._client.indices.exists(index=ORGZ_ES_INDEX_NAME)
         if exists:
             return
         self._logger.info('Creating ElasticSearch index %s', ORGZ_ES_INDEX_NAME)
-        await self.client.indices.create(
+        await self._client.indices.create(
             index=ORGZ_ES_INDEX_NAME,
             body={
                 'settings': {
@@ -61,7 +61,7 @@ class ElasticSearchAdapter:
         )
 
     async def index_activity(self, activity: 'ActivityDto'):
-        await self.client.index(
+        await self._client.index(
             index=ORGZ_ES_INDEX_NAME,
             document={
                 'type': EsSearchType.ACTIVITY.value,
@@ -71,7 +71,7 @@ class ElasticSearchAdapter:
         )
 
     async def index_organization(self, organization: 'OrganizationDto'):
-        await self.client.index(
+        await self._client.index(
             index=ORGZ_ES_INDEX_NAME,
             document={
                 'type': EsSearchType.ORGANIZATION.value,
@@ -81,7 +81,7 @@ class ElasticSearchAdapter:
         )
 
     async def search(self, query: 'ElasticQueryDto') -> 'List[uuid.UUID]':
-        result = await self.client.search(
+        result = await self._client.search(
             index=ORGZ_ES_INDEX_NAME,
             query={
                 'bool': {
@@ -96,7 +96,7 @@ class ElasticSearchAdapter:
 
     async def clear_index(self):
         self._logger.info('Clearing ElasticSearch index %s', ORGZ_ES_INDEX_NAME)
-        await self.client.delete_by_query(
+        await self._client.delete_by_query(
             index=ORGZ_ES_INDEX_NAME,
             body={
                 'query': {

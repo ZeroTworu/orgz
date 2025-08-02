@@ -6,22 +6,31 @@ from alembic import command
 from alembic.config import Config
 
 from app.adapter import DataBaseAdapter
+from app.adapter.search import ElasticSearchAdapter
+from typing import AsyncGenerator
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def event_loop():
     return asyncio.get_event_loop()
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def alembic_config() -> 'Config':
     return Config(os.path.join(os.path.dirname(__file__), '../alembic.ini'))
 
-@pytest.fixture(scope='session', autouse=True)
+@pytest.fixture(autouse=True)
 def migrate_db(alembic_config: 'Config'):
     command.upgrade(alembic_config, 'head')
 
-@pytest.fixture
-async def db_adapter(migrate_db) -> 'DataBaseAdapter':
+@pytest.fixture(scope='function')
+async def db_adapter(migrate_db) -> 'AsyncGenerator[DataBaseAdapter]':
     adapter = DataBaseAdapter()
     await adapter.init_data()
-    return adapter
+    yield adapter
+
+
+@pytest.fixture(scope='function')
+async def search_adapter() -> 'AsyncGenerator[ElasticSearchAdapter]':
+    adapter = ElasticSearchAdapter()
+    await adapter.init_index()
+    yield adapter

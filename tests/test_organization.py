@@ -7,6 +7,7 @@ from app.adapter.dto.organization import (OrganizationDto,
                                           OrganizationGeoQueryDto, GeoSearchMode)
 from app.adapter.dto.building import BuildingDto
 from app.adapter.dto.activity import ActivityDto
+from app.adapter.search import ElasticSearchAdapter
 from app.adapter.store.models import Activity, Building
 
 if TYPE_CHECKING:
@@ -57,7 +58,7 @@ async def test_get_organizations_by_geo_query_empty(db_adapter: 'DataBaseAdapter
     assert len(result) == 0
 
 @pytest.mark.asyncio
-async def test_get_organizations_by_geo_query_radius_count_3(db_adapter: 'DataBaseAdapter'):
+async def test_get_organizations_by_geo_query_radius_count_6(db_adapter: 'DataBaseAdapter'):
     query = OrganizationGeoQueryDto(
         longitude=45.5450,
         latitude=45.3200,
@@ -71,7 +72,7 @@ async def test_get_organizations_by_geo_query_radius_count_3(db_adapter: 'DataBa
     assert all(isinstance(o, OrganizationDto) for o in result)
     assert all(isinstance(o.activity, ActivityDto) for o in result)
     assert all(isinstance(o.building, BuildingDto) for o in result)
-    assert len(result) == 3
+    assert len(result) == 6
 
 @pytest.mark.asyncio
 async def test_get_organizations_by_geo_query_bbox(db_adapter: 'DataBaseAdapter'):
@@ -88,11 +89,19 @@ async def test_get_organizations_by_geo_query_bbox(db_adapter: 'DataBaseAdapter'
     assert all(isinstance(o, OrganizationDto) for o in result)
     assert all(isinstance(o.activity, ActivityDto) for o in result)
     assert all(isinstance(o.building, BuildingDto) for o in result)
-    assert len(result) == 3
+    assert len(result) == 6
 
 
 @pytest.mark.asyncio
-async def test_get_organizations_by_activity_name(db_adapter: 'DataBaseAdapter'):
+async def test_get_organizations_by_activity_name(db_adapter: 'DataBaseAdapter', search_adapter: 'ElasticSearchAdapter'):
 
-    result = await db_adapter.get_organizations_by_activity_name('Еда')
+    result = await db_adapter.get_organizations_by_activity_name('Еда', es=search_adapter)
     assert isinstance(result, list)
+    assert len(result) == 2
+
+@pytest.mark.asyncio
+async def test_get_organizations_by_organization_name(db_adapter: 'DataBaseAdapter', search_adapter: 'ElasticSearchAdapter'):
+
+    result = await db_adapter.get_organizations_by_organization_name('Рога', es=search_adapter)
+    assert isinstance(result, list)
+    assert len(result) == 2
