@@ -5,6 +5,12 @@ on:
     workflows: ["project-check"]
     types:
       - "completed"
+  push:
+    branches:
+      - "*"
+  pull_request:
+    branches:
+      - "master"
 env:
   REGISTRY: "ghcr.io"
   IMAGE_NAME: ${{ github.repository }}/orgz
