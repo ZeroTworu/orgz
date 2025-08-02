@@ -12,27 +12,20 @@ from typing import AsyncGenerator
 
 from app.http.app import app
 
-
-@pytest.fixture
-def event_loop():
-    return asyncio.get_event_loop()
-
-@pytest.fixture
-def alembic_config() -> 'Config':
-    return Config(os.path.join(os.path.dirname(__file__), '../alembic.ini'))
-
 @pytest.fixture(autouse=True)
-def migrate_db(alembic_config: 'Config'):
+def migrate_db():
+    alembic_config = Config(os.path.join(os.path.dirname(__file__), '../alembic.ini'))
     command.upgrade(alembic_config, 'head')
 
-@pytest.fixture
-async def search_adapter() -> 'AsyncGenerator[ElasticSearchAdapter]':
+@pytest.fixture(autouse=True)
+async def search_adapter():
     adapter = ElasticSearchAdapter()
     await adapter.init_index()
-    yield adapter
 
 @pytest.fixture
-async def db_adapter(migrate_db, search_adapter) -> 'AsyncGenerator[DataBaseAdapter]':
+async def db_adapter(migrate_db) -> 'AsyncGenerator[DataBaseAdapter]':
+    adapter = ElasticSearchAdapter()
+    await adapter.init_index()
     adapter = DataBaseAdapter()
     await adapter.init_data()
     yield adapter

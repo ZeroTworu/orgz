@@ -1,3 +1,4 @@
+import asyncio
 from typing import TYPE_CHECKING
 
 from sqlalchemy import delete, select
@@ -49,7 +50,7 @@ class InitDataBaseAdapter:
 
                 self._anime = await self.add_activity('Аниме', cartoon.activity_id)
                 self._wh = await self.add_activity('Warhammer 40000', games.activity_id)
-
+                await asyncio.sleep(0.6)
                 self._logger.warning('Init Activity done.')
 
     async def _init_building(self: 'DataBaseAdapter'):  # noqa: WPS210, WPS213, WPS217
@@ -86,7 +87,7 @@ class InitDataBaseAdapter:
                     45.6454,
                     45.8231,
                 )
-
+                await asyncio.sleep(0.5)
                 self._logger.warning('Init Building done.')
 
     async def _init_organization(self: 'DataBaseAdapter'):  # noqa: WPS210, WPS213, WPS217
@@ -101,5 +102,5 @@ class InitDataBaseAdapter:
                 await self.add_organization('Black Library', self._wh, self._office4)
                 await self.add_organization('ИП Рогов Василий', self._passenger_cars, self._office2)
                 await self.add_organization('Studio Deen', self._anime, self._office3)
-
+                await asyncio.sleep(0.5)
                 self._logger.warning('Init Organization done.')

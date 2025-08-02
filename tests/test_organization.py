@@ -93,15 +93,15 @@ async def test_get_organizations_by_geo_query_bbox(db_adapter: 'DataBaseAdapter'
 
 
 @pytest.mark.asyncio
-async def test_get_organizations_by_activity_name(db_adapter: 'DataBaseAdapter', search_adapter: 'ElasticSearchAdapter'):
+async def test_get_organizations_by_activity_name(db_adapter: 'DataBaseAdapter'):
 
-    result = await db_adapter.get_organizations_by_activity_name('Еда', es=search_adapter)
+    result = await db_adapter.get_organizations_by_activity_name('Еда')
     assert isinstance(result, list)
     assert len(result) == 2
 
 @pytest.mark.asyncio
-async def test_get_organizations_by_organization_name(db_adapter: 'DataBaseAdapter', search_adapter: 'ElasticSearchAdapter'):
+async def test_get_organizations_by_organization_name(db_adapter: 'DataBaseAdapter'):
 
-    result = await db_adapter.get_organizations_by_organization_name('Рога', es=search_adapter)
+    result = await db_adapter.get_organizations_by_organization_name('Рога')
     assert isinstance(result, list)
     assert len(result) == 2

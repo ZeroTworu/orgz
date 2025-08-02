@@ -93,11 +93,9 @@ class ActivityAdapter:  # noqa: WPS214
     async def get_activity_tree_by_name(
             self: 'DataBaseAdapter',
             name: 'str',
-            es_adapter: 'ElasticSearchAdapter' = None
     ) -> 'List[ActivityTreeDto]':
 
-        if es_adapter is None:
-            es_adapter = get_search_adapter()
+        es_adapter = get_search_adapter()
 
         uids = await es_adapter.search(ElasticQueryDto(name=name))
         if not bool(uids):
