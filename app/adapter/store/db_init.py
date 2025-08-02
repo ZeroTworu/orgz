@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 from app.adapter.store.models import Activity, Building, Organization
 
@@ -11,12 +11,19 @@ if TYPE_CHECKING:
 class InitDataBaseAdapter:
 
     async def init_data(self: 'DataBaseAdapter'):
-        # Деятельность#
+        # Деятельность
         await self._init_activity()
         # Здания
         await self._init_building()
         # Организации
         await self._init_organization()
+
+    async def clear_data(self: 'DataBaseAdapter'):
+        async with self._sc() as session:
+            await session.execute(delete(Organization))
+            await session.execute(delete(Activity))
+            await session.execute(delete(Building))
+            await session.commit()
 
     async def _init_activity(self: 'DataBaseAdapter'):  # noqa: WPS210, WPS213, WPS217
 
@@ -30,7 +37,7 @@ class InitDataBaseAdapter:
                 entertainment = await self.add_activity('Развлечения')
 
                 await self.add_activity('Мясная продукция', self._eat.activity_id)
-                await self.add_activity('Молочная продукция', self._eat.activity_id)
+                self._milk = await self.add_activity('Молочная продукция', self._eat.activity_id)
                 await self.add_activity('Грузовые', cars.activity_id)
 
                 self._passenger_cars = await self.add_activity('Легковые', cars.activity_id)
@@ -74,7 +81,13 @@ class InitDataBaseAdapter:
                     45.3231,
                 )
 
-            self._logger.warning('Init Building done.')
+                self._office5 = await self.add_building(
+                    'Уфа, ул. Короленко, д. 5б офис 4.',
+                    45.6454,
+                    45.8231,
+                )
+
+                self._logger.warning('Init Building done.')
 
     async def _init_organization(self: 'DataBaseAdapter'):  # noqa: WPS210, WPS213, WPS217
         async with self._sc() as session:
@@ -83,9 +96,10 @@ class InitDataBaseAdapter:
                 self._logger.warning('Init Organization...')
 
                 await self.add_organization('ООО "Рога и Копыта"', self._eat, self._office1)
+                await self.add_organization('ООО "Рогатая Няша"', self._milk, self._office5)
                 await self.add_organization('Games Workshop', self._wh, self._office1)
                 await self.add_organization('Black Library', self._wh, self._office4)
                 await self.add_organization('ИП Рогов Василий', self._passenger_cars, self._office2)
                 await self.add_organization('Studio Deen', self._anime, self._office3)
 
-            self._logger.warning('Init Organization done.')
+                self._logger.warning('Init Organization done.')

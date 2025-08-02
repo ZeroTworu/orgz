@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import func
 
-from app.adapter.dto.organizations import BuildingDto
+from app.adapter.dto import BuildingDto
 from app.adapter.store.models import Building
 
 if TYPE_CHECKING:

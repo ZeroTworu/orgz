@@ -10,6 +10,27 @@ services:
       - "orgz:/data/postgres:/var/lib/postgresql/data"
     ports:
       - "5557:5432"
+    networks:
+      - "orgz"
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres" ]
+      interval: "5s"
+      retries: "5"
+  elasticsearch:
+    image: "elasticsearch:8.11.3"
+    depends_on:
+      - "postgres"
+    environment:
+      - "discovery.type=single-node"
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "xpack.security.enabled=false"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - "orgz:/usr/share/elasticsearch/data"
+    networks:
+      - "orgz"
 volumes:
   orgz:
 networks:
