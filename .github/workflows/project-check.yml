@@ -24,7 +24,7 @@ jobs:
 
   tests:
     name: "Pytest"
-    needs: [ "linter" ]
+    needs: ["linter"]
     runs-on: "ubuntu-latest"
 
     services:
