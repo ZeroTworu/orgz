@@ -14,7 +14,7 @@ if TYPE_CHECKING:
                                  OrganizationDto, SimpleOrganizationDto)
 
 
-class ElasticSearchAdapter:
+class ElasticSearchAdapter:  # noqa: WPS214
     _logger = get_logger('ElasticSearchAdapter')
 
     def __init__(self):
@@ -107,7 +107,7 @@ class ElasticSearchAdapter:
         return [uuid.UUID(hit['_source']['pk']) for hit in result['hits']['hits']]  # noqa: WPS221
 
     async def clear_index(self):
-        self._logger.info('Clearing ElasticSearch index %s', ORGZ_ES_INDEX_NAME)
+        self._logger.info('Clearing ElasticSearch index %s...', ORGZ_ES_INDEX_NAME)
         await self._client.delete_by_query(
             index=ORGZ_ES_INDEX_NAME,
             body={
@@ -117,3 +117,7 @@ class ElasticSearchAdapter:
             },
             refresh=True
         )
+
+    async def close(self):
+        self._logger.info('Closing ElasticSearch index %s...', ORGZ_ES_INDEX_NAME)
+        await self._client.close()

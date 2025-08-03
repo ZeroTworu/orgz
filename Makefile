@@ -10,7 +10,7 @@ isort:
 	poetry run isort app/ migrations/
 
 test:
-	ORGZ_PYTEST_ON=yes ORGZ_API_KEY=pytest poetry run pytest
+	ORGZ_API_KEY=pytest poetry run pytest
 
 infra:
 	docker-compose -f docker/docker-compose.infra.yaml up --remove-orphans

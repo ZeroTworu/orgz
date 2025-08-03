@@ -14,22 +14,20 @@ if TYPE_CHECKING:
 from asyncio import gather
 
 from app.adapter.dto import ActivityDto, ActivityTreeDto, ElasticQueryDto
-from app.adapter.search import ElasticSearchAdapter, get_search_adapter
 
 
 class ActivityAdapter:  # noqa: WPS214
 
     async def add_activity(self: 'DataBaseAdapter', name: 'str', parent_id: 'uuid.UUID | None' = None) -> 'ActivityDto':
-        es_adapter = get_search_adapter()
         if parent_id is None:
             activity = await self._add_as_root(name)
         else:
             activity = await self._add_under_parent(name, parent_id)
-        await es_adapter.index_activity(activity)
+        await self._search_adapter.index_activity(activity)
         return activity
 
     async def get_all_activities_trees(self: 'DataBaseAdapter') -> 'List[ActivityTreeDto]':
-        async with self._sc() as session:
+        async with self._async_session_maker() as session:
             roots: 'Sequence[uuid.UUID]' = (await session.execute(
                 select(Activity.id).where(Activity.parent_id.is_(None))
             )).scalars().all()
@@ -51,7 +49,7 @@ class ActivityAdapter:  # noqa: WPS214
             self: 'DataBaseAdapter',
             activity_id: 'uuid.UUID|str'
     ) -> 'ActivityTreeDto|None':
-        async with self._sc() as session:
+        async with self._async_session_maker() as session:
             root: 'Result[tuple[Activity]]' = await session.execute(
                 select(Activity).where(Activity.id == activity_id)
             )
@@ -80,9 +78,7 @@ class ActivityAdapter:  # noqa: WPS214
             name: 'str',
     ) -> 'List[uuid.UUID]':
 
-        es_adapter = get_search_adapter()
-
-        uids = await es_adapter.search(ElasticQueryDto(name=name))
+        uids = await self._search_adapter.search(ElasticQueryDto(name=name))
         if not bool(uids):
             return []
         results = await gather(
@@ -98,9 +94,7 @@ class ActivityAdapter:  # noqa: WPS214
             name: 'str',
     ) -> 'List[ActivityTreeDto]':
 
-        es_adapter = get_search_adapter()
-
-        uids = await es_adapter.search(ElasticQueryDto(name=name))
+        uids = await self._search_adapter.search(ElasticQueryDto(name=name))
         if not bool(uids):
             return []
         results = await gather(
@@ -120,7 +114,7 @@ class ActivityAdapter:  # noqa: WPS214
             self: 'DataBaseAdapter',
             activity_id: 'uuid.UUID|str'
     ) -> 'List[uuid.UUID]':
-        async with self._sc() as session:
+        async with self._async_session_maker() as session:
             root: 'Result[tuple[Activity]]' = await session.execute(
                 select(Activity).where(Activity.id == activity_id)
             )
@@ -144,18 +138,15 @@ class ActivityAdapter:  # noqa: WPS214
 
             return [scalar for scalar in descendants]
 
-    async def reindex_activities(self: 'DataBaseAdapter', search_adapter: ElasticSearchAdapter = None):
-        if search_adapter is None:
-            search_adapter = get_search_adapter()
-
-        async with self._sc() as session:
+    async def reindex_activities(self: 'DataBaseAdapter'):
+        async with self._async_session_maker() as session:
             activities = [
                 ActivityDto.model_validate(activity)
                 for activity in (await session.execute(select(Activity))).scalars().all()
             ]
             await gather(
                 *map(
-                    search_adapter.index_activity,
+                    self._search_adapter.index_activity,
                     activities,
                 )
             )
@@ -188,7 +179,7 @@ class ActivityAdapter:  # noqa: WPS214
         return root_node
 
     async def _add_as_root(self: 'DataBaseAdapter', name: 'str') -> 'ActivityDto':
-        async with self._sc() as session:
+        async with self._async_session_maker() as session:
             max_rgt = (
                 await session.execute(
                     select(Activity.rgt).order_by(Activity.rgt.desc()).limit(1)
@@ -208,7 +199,7 @@ class ActivityAdapter:  # noqa: WPS214
             return ActivityDto.model_validate(new_node)
 
     async def _add_under_parent(self: 'DataBaseAdapter', name: 'str', parent_id: 'uuid.UUID') -> 'ActivityDto':
-        async with self._sc() as session:
+        async with self._async_session_maker() as session:
             parent: Activity = (
                 await session.execute(select(Activity).where(Activity.id == parent_id))
             ).scalar_one()

@@ -7,7 +7,6 @@ from sqlalchemy.orm import joinedload, selectinload
 from app.adapter.dto import (ActivityDto, BuildingDto, ElasticQueryDto,
                              EsSearchType, GeoQueryDto, OrganizationDto,
                              SimpleOrganizationDto)
-from app.adapter.search import ElasticSearchAdapter, get_search_adapter
 from app.adapter.store.models import Organization
 
 if TYPE_CHECKING:
@@ -28,8 +27,7 @@ class OrganizationAdapter:  # noqa: WPS214
             activity: 'ActivityDto',
             building: 'BuildingDto',
     ) -> 'OrganizationDto':
-        search_adapter = get_search_adapter()
-        async with self._sc() as session:
+        async with self._async_session_maker() as session:
             record = Organization(
                 name=name,
                 activity_id=activity.activity_id,
@@ -47,14 +45,14 @@ class OrganizationAdapter:  # noqa: WPS214
                 building=building,
                 phones=[],
             )
-            await search_adapter.index_organization(dto)
+            await self._search_adapter.index_organization(dto)
             return dto
 
     async def get_organizations_by_building_id(
             self: 'DataBaseAdapter',
             building_id: 'UUID|str',
     ) -> 'List[OrganizationDto]':
-        async with self._sc() as session:
+        async with self._async_session_maker() as session:
             result: 'Result[tuple[Organization]]' = await session.execute(
                 select(Organization)  # noqa: WPS204
                 .options(
@@ -71,7 +69,7 @@ class OrganizationAdapter:  # noqa: WPS214
             self: 'DataBaseAdapter',
             activity_id: 'UUID|str',
     ) -> 'List[OrganizationDto]':
-        async with self._sc() as session:
+        async with self._async_session_maker() as session:
             result: 'Result[tuple[Organization]]' = await session.execute(
                 select(Organization)
                 .options(
@@ -88,7 +86,7 @@ class OrganizationAdapter:  # noqa: WPS214
             self: 'DataBaseAdapter',
             query: 'GeoQueryDto'
     ) -> 'List[OrganizationDto]':
-        async with self._sc() as session:
+        async with self._async_session_maker() as session:
             result = await session.execute(
                 select(Organization)
                 .join(Organization.building)
@@ -107,7 +105,7 @@ class OrganizationAdapter:  # noqa: WPS214
             self: 'DataBaseAdapter',
             organization_id: 'UUID|str',
     ) -> 'OrganizationDto|None':
-        async with self._sc() as session:
+        async with self._async_session_maker() as session:
             result: 'Result[tuple[Organization]]' = await session.execute(
                 select(Organization)
                 .options(
@@ -129,8 +127,7 @@ class OrganizationAdapter:  # noqa: WPS214
             activity_name: 'str',
     ) -> 'List[OrganizationDto]':
 
-        es = get_search_adapter()
-        id_list = await es.search(ElasticQueryDto(
+        id_list = await self._search_adapter.search(ElasticQueryDto(
             name=activity_name,
         ))
 
@@ -141,7 +138,7 @@ class OrganizationAdapter:  # noqa: WPS214
             ),
         )
         activity_ids = [_uuid for uuids in activity_ids for _uuid in uuids]
-        async with self._sc() as session:
+        async with self._async_session_maker() as session:
             result = (
                 await session.execute(
                     select(Organization)
@@ -162,13 +159,12 @@ class OrganizationAdapter:  # noqa: WPS214
             organization_name: 'str',
     ) -> 'List[OrganizationDto]':
 
-        es = get_search_adapter()
-        id_list = await es.search(ElasticQueryDto(
+        id_list = await self._search_adapter.search(ElasticQueryDto(
             name=organization_name,
             type=EsSearchType.ORGANIZATION,
         ))
 
-        async with self._sc() as session:
+        async with self._async_session_maker() as session:
             result = (
                 await session.execute(
                     select(Organization)
@@ -189,13 +185,12 @@ class OrganizationAdapter:  # noqa: WPS214
             building_address: 'str',
     ) -> 'List[OrganizationDto]':
 
-        es = get_search_adapter()
-        id_list = await es.search(ElasticQueryDto(
+        id_list = await self._search_adapter.search(ElasticQueryDto(
             name=building_address,
             type=EsSearchType.BUILDING,
         ))
 
-        async with self._sc() as session:
+        async with self._async_session_maker() as session:
             result = (
                 await session.execute(
                     select(Organization)
@@ -211,11 +206,8 @@ class OrganizationAdapter:  # noqa: WPS214
 
         return [OrganizationDto.model_validate(res) for res in result]
 
-    async def reindex_organizations(self: 'DataBaseAdapter', search_adapter: ElasticSearchAdapter = None):
-        if search_adapter is None:
-            search_adapter = get_search_adapter()
-
-        async with self._sc() as session:
+    async def reindex_organizations(self: 'DataBaseAdapter'):
+        async with self._async_session_maker() as session:
             organizations = [
                 SimpleOrganizationDto.model_validate(organization)
                 for organization in (await session.execute(select(Organization))).scalars().all()
@@ -224,7 +216,7 @@ class OrganizationAdapter:  # noqa: WPS214
 
             await gather(
                 *map(
-                    search_adapter.index_organization,
+                    self._search_adapter.index_organization,
                     organizations
                 )
             )

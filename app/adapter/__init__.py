@@ -1,23 +1,12 @@
-from typing import TYPE_CHECKING
+from fastapi import Request
 
+from app.adapter.store.elastic import ElasticSearchAdapter
 from app.adapter.store.sql_adapter import DataBaseAdapter
-from app.settings import ORGZ_PYTEST_ON
-
-if TYPE_CHECKING:
-    from typing import AsyncGenerator
-
-_db_adapter: 'DataBaseAdapter' = DataBaseAdapter()
 
 
-async def get_database_adapter() -> 'AsyncGenerator[DataBaseAdapter, None]':
-    if ORGZ_PYTEST_ON:
-        yield DataBaseAdapter()
-    else:
-        yield _db_adapter
+async def get_database_adapter_dep(request: Request) -> DataBaseAdapter:
+    return request.app.state.database_adapter
 
 
-def get_database_sync_adapter() -> 'DataBaseAdapter':
-    if ORGZ_PYTEST_ON:
-        return DataBaseAdapter()
-    else:
-        return _db_adapter
+async def get_search_adapter_dep(request: Request) -> ElasticSearchAdapter:
+    return request.app.state.search_adapter

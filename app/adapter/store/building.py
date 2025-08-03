@@ -5,7 +5,6 @@ from sqlalchemy import func, select
 
 from app.adapter.dto import (BuildingDto, ElasticQueryDto, EsSearchType,
                              GeoQueryDto)
-from app.adapter.search import ElasticSearchAdapter, get_search_adapter
 from app.adapter.store.models import Building
 
 if TYPE_CHECKING:
@@ -23,8 +22,7 @@ class BuildingAdapter:
             longitude: 'float',
             latitude: 'float',
     ) -> 'BuildingDto':
-        async with self._sc() as session:
-            es = get_search_adapter()
+        async with self._async_session_maker() as session:
             point = func.ST_SetSRID(func.ST_Point(longitude, latitude), self.srid)
 
             building = Building(
@@ -42,17 +40,16 @@ class BuildingAdapter:
                 id=building.id,
             )
 
-            await es.index_building(dto)
+            await self._search_adapter.index_building(dto)
             return dto
 
     async def find_buildings_by_address(
             self: 'DataBaseAdapter|BuildingAdapter',
             address: 'str',
     ) -> 'List[BuildingDto]':
-        async with self._sc() as session:
-            es_adapter = get_search_adapter()
-            uids = await es_adapter.search(ElasticQueryDto(name=address, type=EsSearchType.BUILDING))
-            async with self._sc() as session:
+        async with self._async_session_maker() as session:
+            uids = await self._search_adapter.search(ElasticQueryDto(name=address, type=EsSearchType.BUILDING))
+            async with self._async_session_maker() as session:
                 result = await session.execute(
                     select(Building).where(Building.id.in_(uids))
                 )
@@ -65,7 +62,7 @@ class BuildingAdapter:
             self: 'DataBaseAdapter',
             query: 'GeoQueryDto'
     ) -> 'List[BuildingDto]':
-        async with self._sc() as session:
+        async with self._async_session_maker() as session:
             result = await session.execute(
                 select(Building)
                 .where(query.condition)
@@ -77,11 +74,8 @@ class BuildingAdapter:
                 for building in result.scalars().all()
             ]
 
-    async def reindex_buildings(self: 'DataBaseAdapter', search_adapter: ElasticSearchAdapter = None):
-        if search_adapter is None:
-            search_adapter = get_search_adapter()
-
-        async with self._sc() as session:
+    async def reindex_buildings(self: 'DataBaseAdapter'):
+        async with self._async_session_maker() as session:
             buildings = [
                 BuildingDto.model_validate(building)
                 for building in (await session.execute(select(Building))).scalars().all()
@@ -89,7 +83,7 @@ class BuildingAdapter:
 
             await gather(
                 *map(
-                    search_adapter.index_building,
+                    self._search_adapter.index_building,
                     buildings,
                 )
             )

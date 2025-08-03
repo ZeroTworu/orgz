@@ -4,7 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from starlette.status import HTTP_400_BAD_REQUEST
 
-from app.adapter import DataBaseAdapter, get_database_adapter
+from app.adapter import DataBaseAdapter, get_database_adapter_dep
 from app.adapter.dto import (GeoQueryDto, OrganizationDto, SearchQueryDto,
                              geo_query_dto, search_query_dto)
 from app.adapter.dto.activity import SearchType
@@ -22,7 +22,7 @@ organizations_router = APIRouter(prefix='/api/v1/organization', tags=['Орга�
 )
 async def get_organization_by_id(
         org_id: UUID,
-        adapter: DataBaseAdapter =  Depends(get_database_adapter),
+        adapter: DataBaseAdapter =  Depends(get_database_adapter_dep),
 ) -> OrganizationDto|None:
     return await adapter.get_organization_by_id(org_id)
 
@@ -37,7 +37,7 @@ async def get_organization_by_id(
 )
 async def get_organization_by_building_id(
         building_id: UUID,
-        adapter: DataBaseAdapter =  Depends(get_database_adapter),
+        adapter: DataBaseAdapter =  Depends(get_database_adapter_dep),
 ) -> List[OrganizationDto]:
     return await adapter.get_organizations_by_building_id(building_id)
 
@@ -53,7 +53,7 @@ async def get_organization_by_building_id(
 )
 async def get_organization_by_activity_id(
         activity_id: UUID,
-        adapter: DataBaseAdapter =  Depends(get_database_adapter),
+        adapter: DataBaseAdapter =  Depends(get_database_adapter_dep),
 ) -> List[OrganizationDto]:
     return await adapter.get_organizations_by_activity_id(activity_id)
 
@@ -69,7 +69,7 @@ async def get_organization_by_activity_id(
 )
 async def find_activities_by_geolocation(
         query: GeoQueryDto = Depends(geo_query_dto),
-        adapter: DataBaseAdapter =  Depends(get_database_adapter),
+        adapter: DataBaseAdapter =  Depends(get_database_adapter_dep),
 ) -> List[OrganizationDto]:
     return await adapter.find_organizations_by_geo_query(query)
 
@@ -90,7 +90,7 @@ async def find_activities_by_geolocation(
 )
 async def find_organizations_by_every_thing(
         query: SearchQueryDto = Depends(search_query_dto),
-        adapter: DataBaseAdapter =  Depends(get_database_adapter),
+        adapter: DataBaseAdapter =  Depends(get_database_adapter_dep),
 ) -> List[OrganizationDto]:
     match query.search_type:
         case SearchType.ACTIVITY_NAME:

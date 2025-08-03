@@ -14,8 +14,7 @@ if TYPE_CHECKING:
 
 @pytest.mark.asyncio
 async def test_get_organizations_by_building_id(db_adapter: 'DataBaseAdapter'):
-    sc = db_adapter.get_session()
-    async with sc() as session:
+    async with db_adapter.get_session() as session:
         building = (await session.execute(select(Building).where(Building.adress == 'Москва, ул. Пушкина, д. 4б офис 1.'))).first()
 
         result = await db_adapter.get_organizations_by_building_id(building[0].id)
@@ -29,8 +28,7 @@ async def test_get_organizations_by_building_id(db_adapter: 'DataBaseAdapter'):
 
 @pytest.mark.asyncio
 async def test_get_organizations_by_activity_id(db_adapter: 'DataBaseAdapter'):
-    sc = db_adapter.get_session()
-    async with sc() as session:
+    async with db_adapter.get_session() as session:
         building = (await session.execute(select(Activity).where(Activity.name == 'Еда'))).first()
 
         result = await db_adapter.get_organizations_by_activity_id(building[0].id)

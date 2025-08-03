@@ -6,7 +6,7 @@ from alembic import command
 from alembic.config import Config
 
 from app.adapter import DataBaseAdapter
-from app.adapter.search import ElasticSearchAdapter
+from app.adapter import ElasticSearchAdapter
 from httpx import AsyncClient, ASGITransport
 from typing import AsyncGenerator
 
@@ -21,18 +21,18 @@ def migrate_db():
 async def search_adapter():
     adapter = ElasticSearchAdapter()
     await adapter.init_index()
+    yield adapter
 
 @pytest.fixture
-async def db_adapter(migrate_db) -> 'AsyncGenerator[DataBaseAdapter]':
-    adapter = ElasticSearchAdapter()
-    await adapter.init_index()
-    adapter = DataBaseAdapter()
+async def db_adapter(migrate_db, search_adapter) -> 'AsyncGenerator[DataBaseAdapter]':
+    adapter = DataBaseAdapter(search_adapter=search_adapter)
     await adapter.init_data()
     yield adapter
 
 
 @pytest.fixture
-async def client() -> 'AsyncGenerator[AsyncClient]':
+async def client(db_adapter) -> 'AsyncGenerator[AsyncClient]':
+    app.state.database_adapter = db_adapter
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url='http://test') as client:
         yield client

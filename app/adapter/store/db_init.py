@@ -25,7 +25,7 @@ class InitDataBaseAdapter:
         await self._init_phone_number()
 
     async def clear_data(self: 'DataBaseAdapter'):
-        async with self._sc() as session:
+        async with self._async_session_maker() as session:
             await session.execute(delete(Organization))
             await session.execute(delete(Activity))
             await session.execute(delete(Building))
@@ -33,7 +33,7 @@ class InitDataBaseAdapter:
 
     async def _init_activity(self: 'DataBaseAdapter'):  # noqa: WPS210, WPS213, WPS217
 
-        async with self._sc() as session:
+        async with self._async_session_maker() as session:
             result = await session.execute(select(Activity))
             if result.scalars().first() is None:
                 self._logger.warning('Init Activity...')
@@ -59,7 +59,7 @@ class InitDataBaseAdapter:
                 self._logger.warning('Init Activity done.')
 
     async def _init_building(self: 'DataBaseAdapter'):  # noqa: WPS210, WPS213, WPS217
-        async with self._sc() as session:
+        async with self._async_session_maker() as session:
             result = await session.execute(select(Building))
             if result.scalars().first() is None:
                 self._logger.warning('Init Building...')
@@ -88,15 +88,15 @@ class InitDataBaseAdapter:
                 )
 
                 self._office5 = await self.add_building(
-                    'Уфа, ул. Короленко, д. 5б офис 4.',
-                    45.6454,
-                    45.8231,
+                    'Уфа, ул. Короленко, д. 4б офис 4.',
+                    54.81917559325484,
+                    56.09739847769447,
                 )
                 await asyncio.sleep(0.5)
                 self._logger.warning('Init Building done.')
 
     async def _init_organization(self: 'DataBaseAdapter'):  # noqa: WPS210, WPS213, WPS217
-        async with self._sc() as session:
+        async with self._async_session_maker() as session:
             result = await session.execute(select(Organization))
             if result.scalars().first() is None:
                 self._logger.warning('Init Organization...')
@@ -111,7 +111,7 @@ class InitDataBaseAdapter:
                 self._logger.warning('Init Organization done.')
 
     async def _init_phone_number(self: 'DataBaseAdapter'):
-        async with self._sc() as session:
+        async with self._async_session_maker() as session:
             result = await session.execute(select(Phone))
             if result.scalars().first() is None:
                 orgs = [

@@ -15,7 +15,7 @@ ORGZ_API_KEY: 'str' = getenv('ORGZ_API_KEY', None)
 ORGZ_DATA_BASE_ECHO: 'bool' = getenv('ORGZ_DATA_BASE_ECHO', 'yes') == 'yes'
 
 ORGZ_FORCE_RECREATE: 'bool' = getenv('ORGZ_FORCE_RECREATE', 'yes') == 'yes'
-
+print(getenv('ORGZ_USE_FAKE_DATA', 'yes'))
 ORGZ_USE_FAKE_DATA: 'bool' = getenv('ORGZ_USE_FAKE_DATA', 'yes') == 'yes'
 
 ORGZ_LOG_LEVEL: 'str' = getenv('ORGZ_LOG_LEVEL', 'INFO')
@@ -23,8 +23,6 @@ ORGZ_LOG_LEVEL: 'str' = getenv('ORGZ_LOG_LEVEL', 'INFO')
 ORGZ_ELASTIC_HOST: 'str' = getenv('ORGZ_ELASTIC_HOST', 'http://localhost:9200')
 
 ORGZ_ES_INDEX_NAME: 'str' = getenv('ORGZ_ES_INDEX_NAME', 'orgz-index')
-
-ORGZ_PYTEST_ON: 'bool' = getenv('ORGZ_PYTEST_ON', 'no') == 'yes'
 
 if ORGZ_DATA_BASE_DSN is None:
     print('ORGZ_DATA_BASE_DSN is not set!')
