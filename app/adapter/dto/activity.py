@@ -1,8 +1,15 @@
+from enum import Enum
 from typing import List
 from uuid import UUID
 
 from fastapi import Query
 from pydantic import BaseModel, ConfigDict, Field
+
+
+class SearchType(Enum):
+    ACTIVITY_NAME = 'activity_name'
+    ORGANIZATION_NAME = 'organization_name'
+    BUILDING_ADDRESS = 'building_address'
 
 
 class ActivityDto(BaseModel):
@@ -18,9 +25,16 @@ class ActivityTreeDto(ActivityDto):
     children: List['ActivityTreeDto']
 
 
-class NameQueryDto(BaseModel):
-    name: str
+class SearchQueryDto(BaseModel):
+    search_str: str
+    search_type: SearchType = SearchType.ACTIVITY_NAME
 
 
-def name_query_dto(name: str = Query(...), ) -> NameQueryDto:  # noqa: WPS404
-    return NameQueryDto(name=name)
+def search_query_dto(
+        search_str: str = Query(...),  # noqa: WPS404
+        search_type: SearchType = Query(SearchType.ACTIVITY_NAME),  # noqa: WPS404
+) -> SearchQueryDto:
+    return SearchQueryDto(
+        search_str=search_str,
+        search_type=search_type,
+    )

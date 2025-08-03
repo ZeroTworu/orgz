@@ -10,7 +10,7 @@ from app.adapter.search import get_search_adapter
 from app.adapter.store.models import Organization
 
 if TYPE_CHECKING:
-    from typing import List, Iterable
+    from typing import List
     from uuid import UUID
 
     from sqlalchemy import Result
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 from asyncio import gather
 
 
-class OrganizationAdapter:
+class OrganizationAdapter:  # noqa: WPS214
 
     async def add_organization(
             self: 'DataBaseAdapter',
@@ -140,19 +140,26 @@ class OrganizationAdapter:
             ),
         )
         activity_ids = [_uuid for uuids in activity_ids for _uuid in uuids]
-        result = await gather(
-            *map(
-                self.get_organizations_by_activity_id,
-                activity_ids,
-            ),
-        )
+        async with self._sc() as session:
+            result = (
+                await session.execute(
+                    select(Organization)
+                    .options(
+                        joinedload(Organization.building),
+                        joinedload(Organization.activity),
+                        selectinload(Organization.phones),
+                    )
+                    .where(Organization.activity_id.in_(activity_ids))
+                    .distinct()
+                )
+            ).scalars().all()
 
-        return [org for orgs in result for org in orgs]
+            return [OrganizationDto.model_validate(org) for org in result]
 
     async def find_organizations_by_organization_name(
             self: 'DataBaseAdapter',
             organization_name: 'str',
-    ) -> 'Iterable[OrganizationDto]':
+    ) -> 'List[OrganizationDto]':
 
         es = get_search_adapter()
         id_list = await es.search(ElasticQueryDto(
@@ -160,16 +167,45 @@ class OrganizationAdapter:
             type=EsSearchType.ORGANIZATION,
         ))
 
-        result = await gather(
-            *map(
-                self.get_organization_by_id,
-                id_list,
-            ),
-        )
+        async with self._sc() as session:
+            result = (
+                await session.execute(
+                    select(Organization)
+                    .options(
+                        joinedload(Organization.building),
+                        joinedload(Organization.activity),
+                        selectinload(Organization.phones),
+                    )
+                    .where(Organization.id.in_(id_list))
+                    .distinct()
+                )
+            ).scalars().all()
 
-        return list(
-            filter(
-                lambda org: org is not None,
-                result,
-            )
-        )
+        return [OrganizationDto.model_validate(res) for res in result]
+
+    async def find_organizations_by_building_address(
+            self: 'DataBaseAdapter',
+            building_address: 'str',
+    ) -> 'List[OrganizationDto]':
+
+        es = get_search_adapter()
+        id_list = await es.search(ElasticQueryDto(
+            name=building_address,
+            type=EsSearchType.BUILDING,
+        ))
+
+        async with self._sc() as session:
+            result = (
+                await session.execute(
+                    select(Organization)
+                    .options(
+                        joinedload(Organization.building),
+                        joinedload(Organization.activity),
+                        selectinload(Organization.phones),
+                    )
+                    .where(Organization.building_id.in_(id_list))
+                    .distinct()
+                )
+            ).scalars().all()
+
+        return [OrganizationDto.model_validate(res) for res in result]

@@ -3,6 +3,8 @@ import pytest
 from typing import TYPE_CHECKING
 from starlette.status import HTTP_200_OK
 
+from app.adapter.dto.activity import SearchType
+
 if TYPE_CHECKING:
     from httpx import AsyncClient
     from app.adapter import DataBaseAdapter
@@ -42,32 +44,6 @@ async def test_get_organization_by_activity_id(client: 'AsyncClient', db_adapter
 
 
 @pytest.mark.asyncio
-async def test_get_organization_by_activity_name(client: 'AsyncClient'):
-    response = await client.get(
-        '/api/v1/organization/activity_name',
-        params={'name': 'еда'},
-        headers=API_HEADERS,
-    )
-    assert response.status_code == HTTP_200_OK
-    for org in response.json():
-        assert org['activity']['name'].lower() in ['еда', 'молочная продукция']
-
-
-@pytest.mark.asyncio
-async def test_get_organization_by_organization_name(client: 'AsyncClient'):
-    response = await client.get(
-        '/api/v1/organization/organization_name',
-        params={'name': 'рог'},
-        headers=API_HEADERS,
-    )
-    assert response.status_code == HTTP_200_OK
-    json_response = response.json()
-    assert len(json_response) == 3
-    for org in json_response:
-        assert 'рог' in org['name'].lower()
-
-
-@pytest.mark.asyncio
 async def test_get_organization_by_geo(client: 'AsyncClient'):
     response = await client.get(
         '/api/v1/organization/geo',
@@ -85,3 +61,35 @@ async def test_get_organization_by_geo(client: 'AsyncClient'):
     for org in data:
         assert 'building' in org
         assert 'cords' in org['building']
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    'search_type,search_str,expected_in',
+    [
+        (SearchType.ACTIVITY_NAME, 'еда', 'рогатая няша'),
+        (SearchType.ORGANIZATION_NAME, 'няша', 'рогатая няша'),
+        (SearchType.BUILDING_ADDRESS, 'короленко', 'рогатая няша'),
+    ],
+)
+async def test_search_endpoint(
+    client: 'AsyncClient',
+    search_type: SearchType,
+    search_str: str,
+    expected_in: str,
+):
+    response = await client.get(
+        '/api/v1/organization/search',
+        params={
+            'search_str': search_str,
+            'search_type': search_type.value,
+        },
+        headers=API_HEADERS,
+    )
+    assert response.status_code == HTTP_200_OK
+    results = response.json()
+    assert isinstance(results, list)
+    assert any(
+        expected_in.lower() in str(org['name']).lower()
+        for org in results
+    ), f'{expected_in} not found in response'

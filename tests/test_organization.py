@@ -104,3 +104,10 @@ async def test_get_organizations_by_organization_name(db_adapter: 'DataBaseAdapt
     result = await db_adapter.find_organizations_by_organization_name('Рога')
     assert isinstance(result, list)
     assert len(result) == 2
+
+@pytest.mark.asyncio
+async def test_get_organizations_by_building_address(db_adapter: 'DataBaseAdapter'):
+
+    result = await db_adapter.find_organizations_by_building_address('Уфа')
+    assert isinstance(result, list)
+    assert len(result) == 1
