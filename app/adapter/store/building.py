@@ -1,10 +1,11 @@
+from asyncio import gather
 from typing import TYPE_CHECKING
 
 from sqlalchemy import func, select
 
 from app.adapter.dto import (BuildingDto, ElasticQueryDto, EsSearchType,
                              GeoQueryDto)
-from app.adapter.search import get_search_adapter
+from app.adapter.search import ElasticSearchAdapter, get_search_adapter
 from app.adapter.store.models import Building
 
 if TYPE_CHECKING:
@@ -76,3 +77,19 @@ class BuildingAdapter:
                 for building in result.scalars().all()
             ]
 
+    async def reindex_buildings(self: 'DataBaseAdapter', search_adapter: ElasticSearchAdapter = None):
+        if search_adapter is None:
+            search_adapter = get_search_adapter()
+
+        async with self._sc() as session:
+            buildings = [
+                BuildingDto.model_validate(building)
+                for building in (await session.execute(select(Building))).scalars().all()
+            ]
+
+            await gather(
+                *map(
+                    search_adapter.index_building,
+                    buildings,
+                )
+            )

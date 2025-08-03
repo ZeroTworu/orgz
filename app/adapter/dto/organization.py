@@ -24,6 +24,15 @@ class PhoneDto(BaseModel):
     phone: str
 
 
+class SimpleOrganizationDto(BaseModel):
+    model_config = ConfigDict(
+        from_attributes=True,
+    )
+
+    organization_id: UUID = Field(..., alias='id')
+    name: str
+
+
 class OrganizationDto(BaseModel):
     model_config = ConfigDict(
         from_attributes=True,

@@ -8,6 +8,8 @@ except ModuleNotFoundError:
 
 ORGZ_DATA_BASE_DSN: 'str' = getenv('ORGZ_DATA_BASE_DSN', None)
 
+ORGZ_API_KEY_HEADER_NAME: 'str' = getenv('ORGZ_API_KEY_HEADER_NAME', 'X-ORGZ-API-KEY')
+
 ORGZ_API_KEY: 'str' = getenv('ORGZ_API_KEY', None)
 
 ORGZ_DATA_BASE_ECHO: 'bool' = getenv('ORGZ_DATA_BASE_ECHO', 'yes') == 'yes'

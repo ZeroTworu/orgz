@@ -5,8 +5,9 @@ from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import joinedload, selectinload
 
 from app.adapter.dto import (ActivityDto, BuildingDto, ElasticQueryDto,
-                             EsSearchType, GeoQueryDto, OrganizationDto)
-from app.adapter.search import get_search_adapter
+                             EsSearchType, GeoQueryDto, OrganizationDto,
+                             SimpleOrganizationDto)
+from app.adapter.search import ElasticSearchAdapter, get_search_adapter
 from app.adapter.store.models import Organization
 
 if TYPE_CHECKING:
@@ -55,7 +56,7 @@ class OrganizationAdapter:  # noqa: WPS214
     ) -> 'List[OrganizationDto]':
         async with self._sc() as session:
             result: 'Result[tuple[Organization]]' = await session.execute(
-                select(Organization)
+                select(Organization)  # noqa: WPS204
                 .options(
                     joinedload(Organization.building),
                     joinedload(Organization.activity),
@@ -209,3 +210,21 @@ class OrganizationAdapter:  # noqa: WPS214
             ).scalars().all()
 
         return [OrganizationDto.model_validate(res) for res in result]
+
+    async def reindex_organizations(self: 'DataBaseAdapter', search_adapter: ElasticSearchAdapter = None):
+        if search_adapter is None:
+            search_adapter = get_search_adapter()
+
+        async with self._sc() as session:
+            organizations = [
+                SimpleOrganizationDto.model_validate(organization)
+                for organization in (await session.execute(select(Organization))).scalars().all()
+
+            ]
+
+            await gather(
+                *map(
+                    search_adapter.index_organization,
+                    organizations
+                )
+            )

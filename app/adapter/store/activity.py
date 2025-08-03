@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 from asyncio import gather
 
 from app.adapter.dto import ActivityDto, ActivityTreeDto, ElasticQueryDto
-from app.adapter.search import get_search_adapter
+from app.adapter.search import ElasticSearchAdapter, get_search_adapter
 
 
 class ActivityAdapter:  # noqa: WPS214
@@ -143,6 +143,22 @@ class ActivityAdapter:  # noqa: WPS214
             ).scalars().all()
 
             return [scalar for scalar in descendants]
+
+    async def reindex_activities(self: 'DataBaseAdapter', search_adapter: ElasticSearchAdapter = None):
+        if search_adapter is None:
+            search_adapter = get_search_adapter()
+
+        async with self._sc() as session:
+            activities = [
+                ActivityDto.model_validate(activity)
+                for activity in (await session.execute(select(Activity))).scalars().all()
+            ]
+            await gather(
+                *map(
+                    search_adapter.index_activity,
+                    activities,
+                )
+            )
 
     def _build_tree(self: 'DataBaseAdapter', root: 'Activity', descendants: 'Sequence[Activity]') -> 'ActivityTreeDto':
         id_to_node: dict[uuid.UUID, ActivityTreeDto] = {}

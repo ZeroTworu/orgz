@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from typing import List
 
     from app.adapter.dto import (ActivityDto, BuildingDto, ElasticQueryDto,
-                                 OrganizationDto)
+                                 OrganizationDto, SimpleOrganizationDto)
 
 
 class ElasticSearchAdapter:
@@ -22,45 +22,44 @@ class ElasticSearchAdapter:
         self._client = AsyncElasticsearch(hosts=[ORGZ_ELASTIC_HOST])
 
     async def init_index(self):
-        async with self._client as client:
-            exists = await client.indices.exists(index=ORGZ_ES_INDEX_NAME)
-            if exists:
-                return
-            self._logger.info('Creating ElasticSearch index %s', ORGZ_ES_INDEX_NAME)
-            await client.indices.create(
-                index=ORGZ_ES_INDEX_NAME,
-                body={
-                    'settings': {
-                        'analysis': {
-                            'filter': {
-                                'edge_ngram_filter': {
-                                    'type': 'edge_ngram',
-                                    'min_gram': 2,
-                                    'max_gram': 15
-                                }
-                            },
-                            'analyzer': {
-                                'edge_ngram_analyzer': {
-                                    'type': 'custom',
-                                    'tokenizer': 'standard',
-                                    'filter': ['lowercase', 'edge_ngram_filter']
-                                }
+        exists = await self._client.indices.exists(index=ORGZ_ES_INDEX_NAME)
+        if exists:
+            return
+        self._logger.info('Creating ElasticSearch index %s', ORGZ_ES_INDEX_NAME)
+        await self._client.indices.create(
+            index=ORGZ_ES_INDEX_NAME,
+            body={
+                'settings': {
+                    'analysis': {
+                        'filter': {
+                            'edge_ngram_filter': {
+                                'type': 'edge_ngram',
+                                'min_gram': 2,
+                                'max_gram': 15
+                            }
+                        },
+                        'analyzer': {
+                            'edge_ngram_analyzer': {
+                                'type': 'custom',
+                                'tokenizer': 'standard',
+                                'filter': ['lowercase', 'edge_ngram_filter']
                             }
                         }
-                    },
-                    'mappings': {
-                        'properties': {
-                            'name': {
-                                'type': 'text',
-                                'analyzer': 'edge_ngram_analyzer',
-                                'search_analyzer': 'standard'
-                            },
-                            'type': {'type': 'keyword'},
-                            'pk': {'type': 'keyword'}
-                        }
+                    }
+                },
+                'mappings': {
+                    'properties': {
+                        'name': {
+                            'type': 'text',
+                            'analyzer': 'edge_ngram_analyzer',
+                            'search_analyzer': 'standard'
+                        },
+                        'type': {'type': 'keyword'},
+                        'pk': {'type': 'keyword'}
                     }
                 }
-            )
+            }
+        )
 
     async def index_activity(self, activity: 'ActivityDto'):
         async with self._client as client:
@@ -74,51 +73,47 @@ class ElasticSearchAdapter:
             )
 
     async def index_building(self, building: 'BuildingDto'):
-        async with self._client as client:
-            await client.index(
-                index=ORGZ_ES_INDEX_NAME,
-                document={
-                    'type': EsSearchType.BUILDING.value,
-                    'name': building.adress,
-                    'pk': building.building_id,
-                }
-            )
+        await self._client.index(
+            index=ORGZ_ES_INDEX_NAME,
+            document={
+                'type': EsSearchType.BUILDING.value,
+                'name': building.adress,
+                'pk': building.building_id,
+            }
+        )
 
-    async def index_organization(self, organization: 'OrganizationDto'):
-        async with self._client as client:
-            await client.index(
-                index=ORGZ_ES_INDEX_NAME,
-                document={
-                    'type': EsSearchType.ORGANIZATION.value,
-                    'name': organization.name,
-                    'pk': organization.organization_id,
-                }
-            )
+    async def index_organization(self, organization: 'OrganizationDto|SimpleOrganizationDto'):
+        await self._client.index(
+            index=ORGZ_ES_INDEX_NAME,
+            document={
+                'type': EsSearchType.ORGANIZATION.value,
+                'name': organization.name,
+                'pk': organization.organization_id,
+            }
+        )
 
     async def search(self, query: 'ElasticQueryDto') -> 'List[uuid.UUID]':
-        async with self._client as client:
-            result = await client.search(
-                index=ORGZ_ES_INDEX_NAME,
-                query={
-                    'bool': {
-                        'must': [
-                            {'match': {'name': query.name}},
-                            {'term': {'type': query.type.value}},
-                        ]
-                    }
+        result = await self._client.search(
+            index=ORGZ_ES_INDEX_NAME,
+            query={
+                'bool': {
+                    'must': [
+                        {'match': {'name': query.name}},
+                        {'term': {'type': query.type.value}},
+                    ]
                 }
-            )
-            return [uuid.UUID(hit['_source']['pk']) for hit in result['hits']['hits']]  # noqa: WPS221
+            }
+        )
+        return [uuid.UUID(hit['_source']['pk']) for hit in result['hits']['hits']]  # noqa: WPS221
 
     async def clear_index(self):
         self._logger.info('Clearing ElasticSearch index %s', ORGZ_ES_INDEX_NAME)
-        async with self._client as client:
-            await client.delete_by_query(
-                index=ORGZ_ES_INDEX_NAME,
-                body={
-                    'query': {
-                        'match_all': {}
-                    }
-                },
-                refresh=True
-            )
+        await self._client.delete_by_query(
+            index=ORGZ_ES_INDEX_NAME,
+            body={
+                'query': {
+                    'match_all': {}
+                }
+            },
+            refresh=True
+        )
