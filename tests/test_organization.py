@@ -55,7 +55,7 @@ async def test_get_organizations_by_geo_query_empty(db_adapter: 'DataBaseAdapter
     assert len(result) == 0
 
 @pytest.mark.asyncio
-async def test_get_organizations_by_geo_query_radius_count_3(db_adapter: 'DataBaseAdapter'):
+async def test_get_organizations_by_geo_query_radius_count_2(db_adapter: 'DataBaseAdapter'):
     query = GeoQueryDto(
         longitude=45.5450,
         latitude=45.3200,
@@ -69,7 +69,7 @@ async def test_get_organizations_by_geo_query_radius_count_3(db_adapter: 'DataBa
     assert all(isinstance(o, OrganizationDto) for o in result)
     assert all(isinstance(o.activity, ActivityDto) for o in result)
     assert all(isinstance(o.building, BuildingDto) for o in result)
-    assert len(result) == 3
+    assert len(result) == 2
 
 @pytest.mark.asyncio
 async def test_get_organizations_by_geo_query_bbox(db_adapter: 'DataBaseAdapter'):

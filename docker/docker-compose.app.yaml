@@ -1,4 +1,3 @@
-version: "3"
 services:
   postgres:
     image: "postgis/postgis:17-3.5"
@@ -49,7 +48,7 @@ services:
       ORGZ_DATA_BASE_DSN: "postgresql+asyncpg://postgres:password@postgres:5432/db"
       ORGZ_API_KEY: "fkg7h"
       ORGZ_API_KEY_HEADER_NAME: "X-API-ORGZ-KEY"
-      ORGZ_DATA_BASE_ECHO: "yes" # no
+      ORGZ_DATA_BASE_ECHO: "no" # no
       ORGZ_FORCE_RECREATE: "yes" # no
       ORGZ_USE_FAKE_DATA: "yes" # no
       ORGZ_LOG_LEVEL: "INFO"

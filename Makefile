@@ -1,4 +1,4 @@
-.PHONY: lint isort test infra app up migrate
+.PHONY: lint isort test infra app up migrate docker
 
 migrate:
 	alembic upgrade head
@@ -17,6 +17,9 @@ infra:
 
 app:
 	uvicorn app.http.app:app --reload
+
+docker:
+	docker build -f docker/Dockerfile.app . -t hanyuu/orgz
 
 up:
 	docker-compose -f docker/docker-compose.app.yaml up --pull always --force-recreate
