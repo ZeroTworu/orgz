@@ -10,9 +10,14 @@ COPY ../pyproject.toml ../poetry.lock ./
 RUN poetry config virtualenvs.create false \
   && poetry install --only main --no-root
 
+RUN find /usr/local/lib/python3.13/site-packages -name '*.pyc' -delete && \
+    find /usr/local/lib/python3.13/site-packages -name '__pycache__' -delete
+
 FROM python:3.13.5-alpine3.22 AS runtime
 
 RUN adduser app --disabled-password --no-create-home --uid 1337 --home /orgz
+
+RUN rm -rf /usr/share/man /usr/share/doc /var/cache/apk/* /root/.cache
 
 COPY --from=builder /usr/local/lib/python3.13 /usr/local/lib/python3.13
 COPY --from=builder /usr/local/bin /usr/local/bin
