@@ -18,6 +18,7 @@ class ActivityDto(BaseModel):
     )
 
     activity_id: UUID = Field(..., alias='id')
+    parent_id: UUID | None
     name: str
 
 
