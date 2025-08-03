@@ -73,7 +73,7 @@ class ActivityAdapter:  # noqa: WPS214
 
         return self._build_tree(root, descendants)
 
-    async def get_simple_activity_tree_by_name(
+    async def find_simple_activity_tree_by_name(
             self: 'DataBaseAdapter',
             name: 'str',
     ) -> 'List[uuid.UUID]':
@@ -157,7 +157,8 @@ class ActivityAdapter:  # noqa: WPS214
         root_node = ActivityTreeDto(
             id=root.id,
             name=root.name,
-            children=[]
+            children=[],
+            parent_id=root.parent_id,
         )
         id_to_node[root.id] = root_node
 
@@ -165,7 +166,8 @@ class ActivityAdapter:  # noqa: WPS214
             dto = ActivityTreeDto(
                 id=node.id,
                 name=node.name,
-                children=[]
+                children=[],
+                parent_id=node.parent_id
             )
             id_to_node[node.id] = dto
 

@@ -7,7 +7,7 @@ from starlette.status import HTTP_400_BAD_REQUEST
 from app.adapter import DataBaseAdapter, get_database_adapter_dep
 from app.adapter.dto import (GeoQueryDto, OrganizationDto, SearchQueryDto,
                              geo_query_dto, search_query_dto)
-from app.adapter.dto.activity import SearchType
+from app.adapter.dto.search import SearchType
 
 organizations_router = APIRouter(prefix='/api/v1/organization', tags=['Организации'])
 

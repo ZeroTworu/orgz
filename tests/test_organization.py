@@ -3,8 +3,8 @@ from typing import TYPE_CHECKING
 import pytest
 from sqlalchemy import select
 
-from app.adapter.dto.organization import (OrganizationDto,
-                                          GeoQueryDto, GeoSearchMode)
+from app.adapter.dto.organization import (OrganizationDto)
+from app.adapter.dto import GeoQueryDto, GeoSearchMode
 from app.adapter.dto.building import BuildingDto
 from app.adapter.dto.activity import ActivityDto
 from app.adapter.store.models import Activity, Building

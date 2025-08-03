@@ -2,7 +2,7 @@ import pytest
 from typing import TYPE_CHECKING
 from starlette.status import HTTP_200_OK
 
-from app.adapter.dto.activity import SearchType
+from app.adapter.dto.search import SearchType
 from app.settings import ORGZ_API_KEY_HEADER_NAME, ORGZ_API_KEY
 if TYPE_CHECKING:
     from httpx import AsyncClient

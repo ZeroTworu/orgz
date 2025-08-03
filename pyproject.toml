@@ -80,7 +80,7 @@ exclude = [
     "app/settings.py",
     "app/adapter/dto/__init__.py",
     "app/http/api/*.py",
-    "app/adapter/dto/organization.py",
+    "app/adapter/dto/search.py",
     "app/adapter/store/db_init.py",
     "*test_*.py"
 ]
