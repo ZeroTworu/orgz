@@ -10,9 +10,11 @@ ORGZ_DATA_BASE_DSN: 'str' = getenv('ORGZ_DATA_BASE_DSN', None)
 
 ORGZ_API_KEY: 'str' = getenv('ORGZ_API_KEY', None)
 
-ORGZ_DATA_BASE_ECHO: 'bool' = getenv('ORGZ_DATA_BASE_ECHO', 'on') == 'on'
+ORGZ_DATA_BASE_ECHO: 'bool' = getenv('ORGZ_DATA_BASE_ECHO', 'yes') == 'yes'
 
 ORGZ_FORCE_RECREATE: 'bool' = getenv('ORGZ_FORCE_RECREATE', 'yes') == 'yes'
+
+ORGZ_USE_FAKE_DATA: 'bool' = getenv('ORGZ_USE_FAKE_DATA', 'yes') == 'yes'
 
 ORGZ_LOG_LEVEL: 'str' = getenv('ORGZ_LOG_LEVEL', 'INFO')
 

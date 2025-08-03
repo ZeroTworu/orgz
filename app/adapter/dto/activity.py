@@ -25,8 +25,19 @@ class ActivityTreeDto(ActivityDto):
     children: List['ActivityTreeDto']
 
 
-class SearchQueryDto(BaseModel):
+class SimpleSearchQueryDto(BaseModel):
     search_str: str
+
+
+def simple_search_query_dto(
+        search_str: str = Query(...),  # noqa: WPS404
+) -> SimpleSearchQueryDto:
+    return SearchQueryDto(
+        search_str=search_str,
+    )
+
+
+class SearchQueryDto(SimpleSearchQueryDto):
     search_type: SearchType = SearchType.ACTIVITY_NAME
 
 

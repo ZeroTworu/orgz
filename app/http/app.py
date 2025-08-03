@@ -9,7 +9,7 @@ from app.http.api.activity import activity_router
 from app.http.api.building import building_router
 from app.http.api.organization import organizations_router
 from app.http.api_key import verify_api_key
-from app.settings import ORGZ_FORCE_RECREATE
+from app.settings import ORGZ_FORCE_RECREATE, ORGZ_USE_FAKE_DATA
 
 
 @asynccontextmanager
@@ -18,10 +18,11 @@ async def lifespan(_: 'FastAPI'):
     search_adapter = get_search_adapter()
 
     await search_adapter.init_index()
-    if ORGZ_FORCE_RECREATE:
+    if ORGZ_FORCE_RECREATE and ORGZ_USE_FAKE_DATA:
         await search_adapter.clear_index()
         await db_adapter.clear_data()
-    await db_adapter.init_data()
+    if ORGZ_USE_FAKE_DATA:
+        await db_adapter.init_data()
 
     yield
 

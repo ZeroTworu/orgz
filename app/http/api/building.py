@@ -3,8 +3,8 @@ from typing import List
 from fastapi import APIRouter, Depends
 
 from app.adapter import DataBaseAdapter, get_database_adapter
-from app.adapter.dto import (BuildingDto, GeoQueryDto, SearchQueryDto,
-                             geo_query_dto, search_query_dto)
+from app.adapter.dto import (BuildingDto, GeoQueryDto, SimpleSearchQueryDto,
+                             geo_query_dto, simple_search_query_dto)
 
 building_router = APIRouter(prefix='/api/v1/building', tags=['Здания'])
 
@@ -20,7 +20,7 @@ building_router = APIRouter(prefix='/api/v1/building', tags=['Здания'])
     """
 )
 async def find_buildings_by_address(
-        query: SearchQueryDto = Depends(search_query_dto),
+        query: SimpleSearchQueryDto = Depends(simple_search_query_dto),
         adapter: DataBaseAdapter =  Depends(get_database_adapter),
 ) -> List[BuildingDto]:
     return await adapter.find_buildings_by_address(query.name)
